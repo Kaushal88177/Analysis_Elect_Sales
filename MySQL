@@ -1,4 +1,4 @@
-# We have an excel file with data that we have imported for Electronic Sales Data Analysis
+# We have 3 excel files 1. Customers, 2.Stores and 3. Orders  with data that we have imported for Electronic Sales Data Analysis.
 create database es_sales;
 Use es_sales;
 ---------------- Exploratory Data Analysis (EDA) ----------------
