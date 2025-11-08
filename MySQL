@@ -1,0 +1,125 @@
+# We have an excel file with data that we have imported for Electronic Sales Data Analysis
+create database es_sales;
+Use es_sales;
+---------------- Exploratory Data Analysis (EDA) ----------------
+--- A. Customers related analysis ---
+
+-- 1. Select all from customers.
+Select * from es_sales.es_customers;
+
+-- 2. How many distinct customers are in the dataset?
+select	count(distinct(CustomerID)) from es_sales.es_customers;
+
+-- 3. Count the unique Customers by gender.
+select case when CustomerGender = "Male" then "M" when CustomerGender = "Female" then "F" 
+else "Unknown" end as "CustomerGender",
+count(distinct(CustomerID)) as "Distinct customer count" from es_sales.es_customers group by CustomerGender;
+
+-- 4. Find the country wise customers.
+select CustomerCountry, count(*) as Country_Wise_Customers from es_sales.es_customers
+group by CustomerCountry order by Country_Wise_Customers desc;
+
+-- 5. Find the Youngest and oldest customer's DOB.
+Select min(CustomerDOB) as Youngest_Customer_DOB, max(CustomerDOB) as Oldest_Customer_DOB from es_sales.es_customers;
+
+-- 6. Find the maximum, minimum and average age of the customers.
+select
+  max(timestampdiff(YEAR, CustomerDOB, CURDATE())) as Max_Age,
+  min(timestampdiff(YEAR, CustomerDOB, CURDATE())) as Min_Age,
+  avg(timestampdiff(YEAR, CustomerDOB, CURDATE())) as Average_Age
+from es_sales.es_customers;
+
+-- 7. Derive age from customerDOB.  
+select timestampdiff(YEAR, CustomerDOB, CURDATE()) as age, count(*) from es_sales.es_customers group by age order by age;
+
+-- 8. Count the customers by their birth Months.
+select monthname(CustomerDOB) as birthmonth, count(*) from es_sales.es_customers group by birthmonth order by birthmonth;
+
+--- B. Stores related analysis ---
+-- 9. How many stores are in dataset by country?
+Select StoreCountry, count(*) as StoreCount from es_sales.es_stores group by StoreCountry order by StoreCountry;
+
+-- 10. analyze the size of the store.
+select max(StoreSqMeters) As BigestStoreSize, min(StoreSqMeters) as OnlineShop, avg(StoreSqMeters) as AverageStoreSize
+from es_sales.es_stores;
+
+-- 11. Calculate The time since store open date.
+select distinct(StoreState), timestampdiff(YEAR,StoreOpenDate, CURDATE())
+AS StoreAge from es_sales.es_stores;
+
+--- C. Orders related analysis ---
+-- 12. Count the Total sale amount.
+Select sum(ProductSalePrice*Quantity) as TotalSales from es_sales.es_orders;
+
+-- 13. Count the total pfofit amount.
+select sum(Profit*Quantity) as TotalProfit from es_sales.es_orders;
+
+-- 14. Analysis the total sales by product category.
+select ProductCategory, sum(ProductSalePrice*Quantity) as TotalSales from es_sales.es_orders 
+group by ProductCategory order by TotalSales DESC;
+
+-- 15. Analysis the total profit by product category.
+select ProductCategory, sum(Profit*Quantity) as TotalProfit from es_sales.es_orders 
+group by ProductCategory order by TotalProfit DESC;
+
+-- 16. How many unique products, brands and categories are in dataset.
+select count(distinct(ProductName)) as ProductName,
+count(distinct(ProductBrand)) as ProductBrands,
+count(distinct(ProductSubcategory)) as ProductSubCategory,
+count(distinct(ProductCategory)) as ProductCategory from es_sales.es_orders;
+
+-- 17. Find the top 10 most selling product name by quantity
+select ProductName, sum(Quantity) as TotalSold
+from es_sales.es_orders group by ProductName
+order by TotalSold desc limit 10;
+
+-- 18. Find the top 10 most selling product name by Total Sale amonut
+select ProductName, sum(Quantity*ProductSalePrice) as TotalSaleAmount
+from es_sales.es_orders group by ProductName
+order by TotalSaleAmount desc limit 10;
+
+-- 19. Find the top 2 sales and profit products by product category
+select ProductCategory, sum(Quantity*ProductSalePrice) as TotalSales,
+sum((ProductSalePrice*Quantity)-(Profit*Quantity)) as TotalProfit
+from es_sales.es_orders group by ProductCategory
+order by TotalSales desc limit 2;
+
+-- 20. Find the top 2 sales and profit products by product brands
+select ProductBrand, sum(Quantity*ProductSalePrice) as TotalSales,
+sum((ProductSalePrice*Quantity)-(Profit*Quantity)) as TotalProfit
+from es_sales.es_orders group by ProductBrand
+order by TotalSales desc limit 2;
+
+-- 21. Count the total orders by customerId
+select CustomerID, count(*) as OrderCount from es_sales.es_orders
+group by CustomerID order by OrderCount desc;
+
+-- 22. Find the Top 3 customers by total purchase amount
+select CustomerID, sum(Quantity*ProductSalePrice) as OrderCount from es_sales.es_orders
+group by CustomerID order by OrderCount desc limit 3;
+
+-- 23. Find the Totals quantity, sales and profits by years
+select year(OrderDate) as Order_Year, sum(Quantity) as Qty,
+sum(Quantity*ProductSalePrice) as TotalSales,
+sum((ProductSalePrice*Quantity)-(Profit*Quantity)) as TotalProfit
+from es_sales.es_orders group by Order_Year
+order by TotalSales desc;
+
+--- D. Joining the tables using JOINS ---
+
+-- 24. Joins some required columns from customer table and oredr table
+select c.CustomerID,c.CustomerCountry, c.CustomerState, c.CustomerContinent,
+o.OrderDate, o.Quantity, o.ProductSalePrice, o.Profit from es_sales.es_customers c
+JOIN
+es_sales.es_orders o on c.CustomerID = o.CustomerID;
+
+
+-- 25. Count the total sales and profits by customer country
+select 
+c.CustomerCountry,
+sum(o.Quantity*o.ProductSalePrice) as TotalSales,
+sum(o.Quantity*o.Profit) as TotalProfit
+from es_sales.es_customers c
+JOIN es_sales.es_orders o on c.CustomerID = o.CustomerID
+group by c.CustomerCountry
+order by TotalSales desc;
